@@ -1,0 +1,45 @@
+{
+  "name": "ob-pro",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server.ts",
+    "start": "tsx server.ts",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit --skipLibCheck"
+  },
+  "dependencies": {
+    "@capacitor-community/barcode-scanner": "^4.0.1",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/browser": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/haptics": "^6.0.0",
+    "@capacitor/share": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0",
+    "@google/genai": "^1.27.0",
+    "@react-oauth/google": "^0.12.2",
+    "@supabase/supabase-js": "^2.98.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "file-saver": "^2.0.5",
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^1.8.0",
+    "motion": "^12.34.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.4",
+    "recharts": "^3.3.0",
+    "tsx": "^4.21.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}

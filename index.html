@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="https://api.dicebear.com/7.x/initials/svg?seed=OB&backgroundColor=000000&fontFamily=Verdana&fontWeight=900&italic=true&fontSize=45" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="google-site-verification" content="M4rOivsRlDjbmK7-5niEy7t4fIXE-9Q8ZJsmDveVwTU" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="https://api.dicebear.com/7.x/initials/svg?seed=OB&backgroundColor=000000&fontFamily=Verdana&fontWeight=900&italic=true&fontSize=45" />
+    <title>OB Pro</title>
+    <meta name="description" content="A high-performance business management terminal for modern entrepreneurs. Track inventory, sales, and logistics with precision and speed." />
+    <meta property="og:title" content="OB Pro" />
+    <meta property="og:description" content="A high-performance business management terminal for modern entrepreneurs. Track inventory, sales, and logistics with precision and speed." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+              handwriting: ['Caveat', 'cursive'],
+            },
+            colors: {
+              primary: 'rgb(var(--color-primary))',
+              secondary: 'rgb(var(--color-secondary))',
+              accent: 'rgb(var(--color-accent))',
+              background: 'rgb(var(--color-background))',
+              surface: 'rgb(var(--color-surface))',
+              'text-primary': 'rgb(var(--color-text-primary))',
+              'text-secondary': 'rgb(var(--color-text-secondary))',
+              gray: {
+                50: 'rgb(var(--gray-50))',
+                100: 'rgb(var(--gray-100))',
+                200: 'rgb(var(--gray-200))',
+                300: 'rgb(var(--gray-300))',
+                400: 'rgb(var(--gray-400))',
+                500: 'rgb(var(--gray-500))',
+                600: 'rgb(var(--gray-600))',
+                700: 'rgb(var(--gray-700))',
+                800: 'rgb(var(--gray-800))',
+                900: 'rgb(var(--gray-900))',
+                950: 'rgb(var(--gray-950))',
+              }
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.4s ease-out',
+              'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'slide-down': 'slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+              'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
+              'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+              'hi': 'hi 3s ease-in-out infinite',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: 0, transform: 'scale(0.99)' },
+                '100%': { opacity: 1, transform: 'scale(1)' },
+              },
+              slideUp: {
+                 '0%': { transform: 'translate3d(0, 15px, 0)', opacity: 0 },
+                 '100%': { transform: 'translate3d(0, 0, 0)', opacity: 1 },
+              },
+              slideDown: {
+                 '0%': { transform: 'translate3d(0, -15px, 0)', opacity: 0 },
+                 '100%': { transform: 'translate3d(0, 0, 0)', opacity: 1 },
+              },
+              pulseSoft: {
+                '0%, 100%': { opacity: 1 },
+                '50%': { opacity: 0.8 },
+              },
+              shake: {
+                '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                '40%, 60%': { transform: 'translate3d(4px, 0, 0)' },
+              },
+              hi: {
+                '0%, 100%': { transform: 'scale(0) translateY(0)', opacity: 0 },
+                '10%, 90%': { transform: 'scale(1) translateY(-5px)', opacity: 1 },
+                '20%, 40%, 60%, 80%': { transform: 'scale(1) translateY(-5px) rotate(-10deg)' },
+                '30%, 50%, 70%': { transform: 'scale(1) translateY(-5px) rotate(10deg)' },
+              }
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+      :root {
+        --color-primary: 0, 0, 0;
+        --color-secondary: 31, 41, 55;
+        --color-accent: 46, 204, 113;
+        --color-background: 255, 255, 255;
+        --color-surface: 249, 250, 251;
+        --color-text-primary: 17, 24, 39;
+        --color-text-secondary: 107, 114, 128;
+        
+        --gray-50: 249, 250, 251;
+        --gray-100: 243, 244, 246;
+        --gray-200: 229, 231, 235;
+        --gray-300: 209, 213, 219;
+        --gray-400: 156, 163, 175;
+        --gray-500: 107, 114, 128;
+        --gray-600: 75, 85, 99;
+        --gray-700: 55, 65, 81;
+        --gray-800: 31, 41, 55;
+        --gray-900: 17, 24, 39;
+        --gray-950: 3, 7, 18;
+      }
+      .dark {
+        --color-background: 17, 24, 39;
+        --color-surface: 31, 41, 55;
+        --color-text-primary: 249, 250, 251;
+        --color-text-secondary: 156, 163, 175;
+        
+        --gray-800: 31, 41, 55;
+        --gray-900: 17, 24, 39;
+        --gray-950: 3, 7, 18;
+      }
+      .midnight {
+        --color-primary: 96, 165, 250;
+        --color-background: 15, 23, 42;
+        --color-surface: 30, 41, 59;
+        --color-text-primary: 241, 245, 249;
+        --color-text-secondary: 148, 163, 184;
+        
+        --gray-800: 30, 41, 59;
+        --gray-900: 15, 23, 42;
+        --gray-950: 8, 12, 24;
+      }
+      .forest {
+        --color-primary: 52, 211, 153;
+        --color-background: 6, 78, 59;
+        --color-surface: 20, 83, 45;
+        --color-text-primary: 236, 253, 245;
+        --color-text-secondary: 167, 243, 208;
+        
+        --gray-800: 20, 83, 45;
+        --gray-900: 6, 78, 59;
+        --gray-950: 2, 44, 34;
+      }
+      .sunset {
+        --color-primary: 251, 146, 60;
+        --color-background: 69, 10, 10;
+        --color-surface: 127, 29, 29;
+        --color-text-primary: 255, 247, 237;
+        --color-text-secondary: 253, 186, 116;
+        
+        --gray-800: 127, 29, 29;
+        --gray-900: 69, 10, 10;
+        --gray-950: 40, 5, 5;
+      }
+      .ocean {
+        --color-primary: 34, 211, 238;
+        --color-background: 8, 51, 68;
+        --color-surface: 21, 94, 117;
+        --color-text-primary: 236, 254, 255;
+        --color-text-secondary: 165, 243, 252;
+        
+        --gray-800: 21, 94, 117;
+        --gray-900: 8, 51, 68;
+        --gray-950: 4, 34, 46;
+      }
+
+      html, body, #root {
+        height: 100%;
+        background-color: #FFFFFF;
+        -webkit-font-smoothing: antialiased;
+        scrollbar-gutter: stable;
+      }
+      
+      .dark body, .dark #root { background-color: #111827; }
+      .midnight body, .midnight #root { background-color: #0f172a; }
+      .forest body, .forest #root { background-color: #064e3b; }
+      .sunset body, .sunset #root { background-color: #450a0a; }
+      .ocean body, .ocean #root { background-color: #083344; }
+      
+      body {
+        overscroll-behavior-y: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      .gpu-accelerated {
+        transform: translate3d(0,0,0);
+        backface-visibility: hidden;
+        will-change: transform, opacity;
+      }
+
+      ::-webkit-scrollbar { display: none; }
+      * { -ms-overflow-style: none; scrollbar-width: none; }
+
+      .card-shadow {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      }
+
+      .input-field {
+        background: #F8F9FB;
+        border: 1px solid #E5E7EB;
+        border-radius: 16px;
+        padding: 16px 20px;
+        font-size: 16px;
+        width: 100%;
+        color: #000000 !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .input-field:focus {
+        background: #FFFFFF;
+        box-shadow: 0 0 0 2px #000000;
+        outline: none;
+        border-color: #000000;
+        color: #000000 !important;
+      }
+      
+      .dark .input-field {
+        background: #1F2937;
+        color: #FFFFFF !important;
+        border-color: #374151;
+      }
+
+      .primary-button {
+        background: #000000;
+        color: #FFFFFF;
+        border-radius: 16px;
+        padding: 16px;
+        font-weight: 700;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: transform 0.1s, opacity 0.2s;
+      }
+      .primary-button:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+      }
+      
+      .dark .primary-button {
+        background: #F9FAFB;
+        color: #000000;
+      }
+    </style>
+</head>
+  <body>
+    <div id="root"></div>
+    <footer style="position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 8px; opacity: 0.3; pointer-events: none; z-index: -1;">
+      <a href="/privacy" style="color: inherit; text-decoration: none; margin-right: 10px;">Privacy Policy</a>
+      <a href="/terms" style="color: inherit; text-decoration: none;">Terms of Service</a>
+    </footer>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "OB Pro",
+  "description": "A high-performance business management terminal for modern entrepreneurs. Track inventory, sales, and logistics with precision and speed.",
+  "requestFramePermissions": [
+    "geolocation",
+    "publickey-credentials-create",
+    "publickey-credentials-get",
+    "webauthn",
+    "otp-credentials"
+  ],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
