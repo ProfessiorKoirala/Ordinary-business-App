@@ -2,7 +2,7 @@ import { AppDataBackup } from "./types";
 import { exportToExcelBuffer, importFromExcel } from "./utils/excelExportUtils";
 
 // Default Google OAuth Client ID for OB Pro
-export const GOOGLE_CLIENT_ID = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '60138441037-placeholder.apps.googleusercontent.com';
+export const GOOGLE_CLIENT_ID = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '3255940559-7b3hjj6b2q8r59q0bshb4j6b59q0bshb.apps.googleusercontent.com';
 
 // --- SCOPES ---
 // drive.file: Per-file access to files created or opened by the app. The user can see these files in their Drive.
@@ -47,15 +47,19 @@ async function authorizedFetch(url: string, options: RequestInit): Promise<Respo
  * The 'drive.file' scope limits this search to only files created or opened by this app.
  * @param accessToken - The OAuth2 access token.
  */
+/**
+ * Finds the ID of 'obProData.xlsx' in the user's Google Drive appDataFolder.
+ * @param accessToken - The OAuth2 access token.
+ */
 async function getDriveFileId(accessToken: string): Promise<string | null> {
     try {
         if (!accessToken) {
             throw new Error("Authentication token is not available.");
         }
         
-        // Search for files named DATA_FILE_NAME that are not trashed.
+        // Search for files named DATA_FILE_NAME in appDataFolder that are not trashed.
         const query = encodeURIComponent(`name='${DATA_FILE_NAME}' and trashed=false`);
-        const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name)`, {
+        const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${query}&fields=files(id,name)`, {
             headers: new Headers({ 'Authorization': `Bearer ${accessToken}` }),
         });
         
@@ -76,13 +80,13 @@ async function getDriveFileId(accessToken: string): Promise<string | null> {
 }
 
 /**
- * Gets the metadata (including modifiedTime) of the data file.
+ * Gets the metadata (including modifiedTime) of the data file in appDataFolder.
  * @param accessToken - The OAuth2 access token.
  */
 export async function getFileDataMetadata(accessToken: string): Promise<{ id: string, modifiedTime: string } | null> {
     try {
         const query = encodeURIComponent(`name='${DATA_FILE_NAME}' and trashed=false`);
-        const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,modifiedTime)`, {
+        const response = await authorizedFetch(`https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=${query}&fields=files(id,name,modifiedTime)`, {
             headers: new Headers({ 'Authorization': `Bearer ${accessToken}` }),
         });
         
@@ -98,15 +102,14 @@ export async function getFileDataMetadata(accessToken: string): Promise<{ id: st
 }
 
 /**
- * Loads and parses 'obProData.xlsx' from Google Drive.
+ * Loads and parses 'obProData.xlsx' from Google Drive appDataFolder.
  * @param accessToken - The OAuth2 access token.
  */
 export async function loadDataFromDrive(accessToken: string): Promise<AppDataBackup | null> {
     const fileId = await getDriveFileId(accessToken);
 
     if (!fileId) {
-        console.log("⚠️ No saved file found in Drive. Will start with initial data.");
-        // No alert here to avoid being intrusive on first login.
+        console.log("⚠️ No saved file found in Drive appDataFolder. Will start with initial data.");
         return null;
     }
 
@@ -123,7 +126,7 @@ export async function loadDataFromDrive(accessToken: string): Promise<AppDataBac
             return null;
         }
         
-        console.log("📂 Data loaded successfully from Google Drive (Excel).");
+        console.log("📂 Data loaded successfully from Google Drive AppData (Excel).");
         return data as AppDataBackup;
     } catch (err: any) {
         if (err.message === GAPI_TOKEN_EXPIRED_ERROR) throw err; // Re-throw
@@ -134,7 +137,7 @@ export async function loadDataFromDrive(accessToken: string): Promise<AppDataBac
 }
 
 /**
- * Saves the app data to 'obProData.xlsx' in the user's Google Drive.
+ * Saves the app data to 'obProData.xlsx' in the user's Google Drive appDataFolder.
  * Creates the file if it doesn't exist, otherwise updates it.
  * @param accessToken - The OAuth2 access token.
  * @param data - The application data to save.
@@ -148,6 +151,7 @@ export async function saveDataToDrive(accessToken: string, data: AppDataBackup) 
         const metadata = {
             name: DATA_FILE_NAME,
             mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            parents: ['appDataFolder']
         };
         const formData = new FormData();
         
@@ -158,7 +162,7 @@ export async function saveDataToDrive(accessToken: string, data: AppDataBackup) 
             url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
             method = 'PATCH';
             formData.append('metadata', new Blob([JSON.stringify({ mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })], { type: 'application/json' }));
-        } else { // Create new file
+        } else { // Create new file in appDataFolder
             url = `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id`;
             method = 'POST';
             formData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
@@ -178,7 +182,7 @@ export async function saveDataToDrive(accessToken: string, data: AppDataBackup) 
             throw errorBody;
         }
 
-        console.log(`✅ Data saved to Google Drive (Excel)`);
+        console.log(`✅ Data saved to Google Drive AppData (Excel)`);
     } catch (err: any) {
         if (err.message === GAPI_TOKEN_EXPIRED_ERROR) throw err; // Re-throw
         const message = parseApiError(err);

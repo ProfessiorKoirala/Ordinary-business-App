@@ -14,6 +14,11 @@ window.onerror = (message, source, lineno, colno, error) => {
 };
 
 window.onunhandledrejection = (event) => {
+  const reason = event.reason?.message || String(event.reason || '');
+  if (reason.includes('WebSocket closed without opened') || reason.includes('ws://') || reason.includes('wss://')) {
+    event.preventDefault();
+    return;
+  }
   console.error("Unhandled Promise Rejection:", event.reason);
 };
 
