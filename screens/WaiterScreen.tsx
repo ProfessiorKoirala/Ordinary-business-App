@@ -35,8 +35,15 @@ const WaiterScreen: React.FC<WaiterScreenProps> = ({ kots, tables, onUpdateKOTSt
         const currentMaxTimestamp = Math.max(0, ...readyKots.map(k => k.timestamp));
         if (currentMaxTimestamp > lastReadyTimestamp) {
             // Play sound for waiter
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.play().catch(e => console.log('Audio play blocked or failed:', e));
+            try {
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => console.log('Audio autoplay blocked or failed:', e));
+                }
+            } catch (e) {
+                console.log('Audio initialization failed:', e);
+            }
         }
         setLastReadyTimestamp(currentMaxTimestamp);
     }, [readyKots, lastReadyTimestamp]);

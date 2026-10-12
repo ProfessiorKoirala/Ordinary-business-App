@@ -858,6 +858,12 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
                 <SideMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} setCurrentView={setCurrentView} activeUser={activeUser} settings={settings} onLogout={onLogout} />
                 <div ref={scrollContainerRef} className={`absolute inset-0 w-full h-full bg-background dark:bg-gray-900 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] gpu-accelerated ${isMenuOpen ? 'shadow-2xl overflow-hidden' : ''}`} style={{ transform: isMenuOpen ? 'translate3d(288px, 0, 0) scale(0.85)' : 'translate3d(0, 0, 0)', borderRadius: isMenuOpen ? '32px' : '0px' }}>
                     {isMenuOpen && <div className="absolute inset-0 z-50 rounded-[32px] cursor-pointer" onClick={() => setIsMenuOpen(false)} />}
+                    <div className="absolute top-4 right-6 z-[60] pointer-events-none">
+                        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-md transition-all duration-300 ${syncStatus === 'Syncing...' ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                             <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                             <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest">Syncing...</span>
+                        </div>
+                    </div>
                     <div className="relative h-full w-full overflow-hidden">
                         <div className={`flex h-full w-[400%] transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] gpu-accelerated ${!isSwipeableView ? 'opacity-0 pointer-events-none' : 'opacity-100'}`} style={{ transform: `translate3d(-${swipeIndex * 25}%, 0, 0)` }}>
                             <div className="w-1/4 h-full overflow-hidden"><DashboardScreen setIsMenuOpen={setIsMenuOpen} setCurrentView={setCurrentView} currentView={currentView} businessProfile={businessProfile} orders={orders} expenses={expenses} products={products} payments={payments} vendorPayments={vendorPayments} unreadNotificationCount={notifications.filter(n=>!n.read).length} onOpenNotifications={() => setIsNotificationsOpen(true)} settings={settings} onUpdateBusinessSettings={updateSettings} onUpdateBusinessProfile={(p)=>updateState('businessProfile', p)} activeUser={activeUser} isDesktop={false} syncStatus={syncStatus} appData={appData} /></div>

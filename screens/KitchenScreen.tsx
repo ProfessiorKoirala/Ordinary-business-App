@@ -35,8 +35,15 @@ const KitchenScreen: React.FC<KitchenScreenProps> = ({ kots, tables, onUpdateKOT
         const currentMaxTimestamp = Math.max(0, ...activeKots.map(k => k.timestamp));
         if (currentMaxTimestamp > lastKotTimestamp) {
             // Play sound
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-            audio.play().catch(e => console.log('Audio play blocked or failed:', e));
+            try {
+                const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(e => console.log('Audio autoplay blocked or failed:', e));
+                }
+            } catch (e) {
+                console.log('Audio initialization failed:', e);
+            }
         }
         setLastKotTimestamp(currentMaxTimestamp);
     }, [activeKots, lastKotTimestamp]);

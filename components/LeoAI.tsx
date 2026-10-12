@@ -103,9 +103,8 @@ const LeoAI: React.FC<LeoAIProps> = ({ appData }) => {
                 return;
             }
 
-            let audioPath = '';
-            if (type === 'send') audioPath = '/Sound/Message send.mp3';
-            else if (type === 'receive') audioPath = '/Sound/Message received.wav';
+            // Audio disabled for non-existent files
+            const audioPath = '';
 
             if (audioPath) {
                 const audio = new Audio(audioPath);

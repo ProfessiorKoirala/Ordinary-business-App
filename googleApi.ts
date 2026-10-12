@@ -1,5 +1,6 @@
 import { AppDataBackup } from "./types";
 import { exportToExcelBuffer, importFromExcel } from "./utils/excelExportUtils";
+import { log } from './utils/logger';
 
 // Default Google OAuth Client ID for OB Pro
 export const GOOGLE_CLIENT_ID = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '3255940559-7b3hjj6b2q8r59q0bshb4j6b59q0bshb.apps.googleusercontent.com';
@@ -101,15 +102,17 @@ export async function getFileDataMetadata(accessToken: string): Promise<{ id: st
     }
 }
 
+
 /**
  * Loads and parses 'obProData.xlsx' from Google Drive appDataFolder.
  * @param accessToken - The OAuth2 access token.
  */
 export async function loadDataFromDrive(accessToken: string): Promise<AppDataBackup | null> {
+    log("loadDataFromDrive: Started");
     const fileId = await getDriveFileId(accessToken);
 
     if (!fileId) {
-        console.log("⚠️ No saved file found in Drive appDataFolder. Will start with initial data.");
+        log("loadDataFromDrive: No file found in appDataFolder");
         return null;
     }
 
@@ -122,13 +125,14 @@ export async function loadDataFromDrive(accessToken: string): Promise<AppDataBac
         const data = await importFromExcel(blob);
         
         if (!data || Object.keys(data).length === 0) {
-            console.error("Failed to parse Excel data from Drive");
+            log("loadDataFromDrive: Failed to parse");
             return null;
         }
         
-        console.log("📂 Data loaded successfully from Google Drive AppData (Excel).");
+        log("loadDataFromDrive: Success");
         return data as AppDataBackup;
     } catch (err: any) {
+        log("loadDataFromDrive: Error", err);
         if (err.message === GAPI_TOKEN_EXPIRED_ERROR) throw err; // Re-throw
         const message = parseApiError(err);
         console.error("Error loading data from Drive:", message, err);
