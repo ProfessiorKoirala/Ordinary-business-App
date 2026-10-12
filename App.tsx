@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { GoogleOAuthProvider, CodeResponse } from '@react-oauth/google';
-import { getSupabase } from './src/supabase';
-import { Session } from '@supabase/supabase-js';
+import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import SplashScreen from './screens/SplashScreen';
 import OnboardingScreen from './screens/OnboardingScreen';
 import PermissionScreen from './screens/PermissionScreen';
@@ -11,9 +9,6 @@ import { User, AppDataBackup, Theme, BusinessProfile, Promotion } from './types'
 import AccountChooserScreen from './screens/AccountChooserScreen';
 import { loadDataFromDrive, deleteDataFromDrive, saveDataToDrive, GOOGLE_CLIENT_ID, GAPI_TOKEN_EXPIRED_ERROR } from './googleApi';
 import { getInitialData, loadLocalDataForUser, mergeWithInitialData, deleteLocalDataForUser } from './utils/dataUtils';
-import { isNative } from './utils/nativeUtils';
-import { Browser } from '@capacitor/browser';
-import { App as CapApp } from '@capacitor/app';
 import PinLoginScreen from './screens/PinLoginScreen';
 import PasswordLoginScreen from './screens/PasswordLoginScreen';
 import PremiumFeatureScreen from './screens/PremiumFeatureScreen';
@@ -44,46 +39,74 @@ const AppContent: React.FC = () => {
     const [initialData, setInitialData] = useState<AppDataBackup | null>(null);
     const [loadingMessage, setLoadingMessage] = useState('Loading...');
     const [showPremiumScreen, setShowPremiumScreen] = useState(false);
-    const [supabaseSession, setSupabaseSession] = useState<Session | null>(null);
     const [activePromotion, setActivePromotion] = useState<Promotion | null>(null);
     const [showPromotion, setShowPromotion] = useState(false);
 
-    const handleGoogleSync = useCallback(async () => {
-        const supabase = getSupabase();
-        if (!supabase) return;
+    const loginForSync = useGoogleLogin({
+        scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+        onSuccess: async (tokenResponse) => {
+            try {
+                const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+                });
+                if (!userInfoRes.ok) throw new Error("Failed to fetch Google profile");
+                const gUser = await userInfoRes.json();
+                const userId = `google-${gUser.sub}`;
+                const userObj: User = {
+                    id: userId,
+                    name: gUser.name || gUser.email?.split('@')[0] || 'User',
+                    email: gUser.email || '',
+                    profilePicUrl: gUser.picture || `https://i.pravatar.cc/150?u=${gUser.email}`,
+                    accountType: 'google',
+                    accessToken: tokenResponse.access_token,
+                };
 
-        try {
-            if (isNative()) {
-                // For Native APK: Use Capacitor Browser to handle OAuth
-                // The user must add 'com.obpro.app://' to Supabase Redirect URLs
-                const { data, error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                        scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-                        redirectTo: 'com.obpro.app://google-auth',
-                        skipBrowserRedirect: true // This is key for native
-                    }
-                });
-                if (error) throw error;
-                if (data?.url) {
-                    await Browser.open({ url: data.url });
+                let storedUsers: User[] = [];
+                try {
+                    const storedUsersStr = localStorage.getItem('ob-pro-users') || localStorage.getItem('mynager-users');
+                    storedUsers = storedUsersStr ? JSON.parse(storedUsersStr) : [];
+                } catch (e) {
+                    console.error("Failed to parse stored users", e);
                 }
-            } else {
-                // For Web: Standard redirect
-                const { error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                        scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-                        redirectTo: window.location.origin
+                const existing = storedUsers.find(u => u.id === userId);
+                const mergedUser = { ...(existing || {}), ...userObj };
+
+                if (appState === 'LOGGED_IN' && activeUser?.accountType === 'local') {
+                    if (initialData) {
+                        localStorage.setItem(`ob-pro-data-${userId}`, JSON.stringify(initialData));
+                        try {
+                            await saveDataToDrive(tokenResponse.access_token, initialData);
+                        } catch (err) {
+                            console.error("Failed to save data to Drive during migration:", err);
+                        }
                     }
+                }
+
+                setUsers(prev => {
+                    const updated = prev.some(u => u.id === userId)
+                        ? prev.map(u => u.id === userId ? mergedUser : u)
+                        : [...prev, mergedUser];
+                    localStorage.setItem('ob-pro-users', JSON.stringify(updated));
+                    return updated;
                 });
-                if (error) throw error;
+
+                handleSelectAccount(mergedUser);
+            } catch (err) {
+                console.error("Google user info failed:", err);
             }
-        } catch (err) {
-            console.error("Google sync error:", err);
-            alert("Failed to start Google sync. Please check your connection.");
+        },
+        onError: (err) => {
+            console.error("Google sync cancelled or failed:", err);
         }
-    }, []);
+    });
+
+    const handleGoogleSync = useCallback(() => {
+        try {
+            loginForSync();
+        } catch (err) {
+            console.error("Google sync trigger error:", err);
+        }
+    }, [loginForSync]);
 
     const handleSelectAccount = useCallback((user: User, isAutoLogin: boolean = false) => {
         if (user.accountType === 'google' && !user.accessToken) {
@@ -98,155 +121,6 @@ const AppContent: React.FC = () => {
         setSelectedAuthMethod(null);
         setAppState('AUTHENTICATING_USER');
     }, [handleGoogleSync]);
-
-    const handleSupabaseSession = useCallback(async (session: Session) => {
-        const { user } = session;
-        const providerToken = session.provider_token;
-        
-        if (user) {
-            const userId = `google-${user.id}`;
-            const gUser: User = {
-                id: userId,
-                name: user.user_metadata.full_name || user.email?.split('@')[0] || 'User',
-                email: user.email || '',
-                profilePicUrl: user.user_metadata.avatar_url || `https://i.pravatar.cc/150?u=${user.email}`,
-                accountType: 'google' as const,
-                accessToken: providerToken || undefined, // Use token if available
-            };
-
-            // Get existing users from localStorage directly to avoid stale state or race conditions
-            let storedUsers: User[] = [];
-            try {
-                const storedUsersStr = localStorage.getItem('ob-pro-users') || localStorage.getItem('mynager-users');
-                storedUsers = storedUsersStr ? JSON.parse(storedUsersStr) : [];
-            } catch (e) {
-                console.error("Failed to parse stored users in handleSupabaseSession", e);
-            }
-            const existingUser = storedUsers.find(u => u.id === userId);
-            
-            // If we don't have a provider token in the session but we have one stored, use it
-            if (!gUser.accessToken && existingUser?.accessToken) {
-                gUser.accessToken = existingUser.accessToken;
-            }
-
-            const mergedUser = { ...(existingUser || {}), ...gUser };
-
-            // If we are currently logged in as a Local user, we are migrating
-            if (appState === 'LOGGED_IN' && activeUser?.accountType === 'local') {
-                const oldUserId = activeUser.id;
-                // Migrate data
-                if (initialData) {
-                    // Save to local for new user
-                    localStorage.setItem(`ob-pro-data-${userId}`, JSON.stringify(initialData));
-                    // Save to Drive for new user
-                    try {
-                        await saveDataToDrive(providerToken, initialData);
-                    } catch (err) {
-                        console.error("Failed to save data to Drive during migration:", err);
-                    }
-                }
-                
-                const userWithSettings = { ...activeUser, ...mergedUser };
-                setUsers(prevUsers => {
-                    const updatedUsers = prevUsers.some(u => u.id === userId)
-                        ? prevUsers.map(u => (u.id === userId ? userWithSettings : u))
-                        : [...prevUsers, userWithSettings];
-                    localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
-                    return updatedUsers;
-                });
-
-                setActiveUser(userWithSettings);
-                alert("Congratulations! You are now a premium user with Google Drive Sync enabled.");
-                return;
-            }
-
-            setUsers(prevUsers => {
-                const updatedUsers = prevUsers.some(u => u.id === userId)
-                    ? prevUsers.map(u => (u.id === userId ? mergedUser : u))
-                    : [...prevUsers, mergedUser];
-                localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
-                return updatedUsers;
-            });
-            
-            // If we are in AUTH state, log them in automatically
-            // We skip auto-login during LOADING phase to ensure the splash screen finishes properly
-            if (appState === 'AUTH') {
-                handleSelectAccount(mergedUser, true);
-            }
-        }
-    }, [appState, activeUser, initialData, handleSelectAccount]);
-
-    const handleSupabaseSessionRef = useRef(handleSupabaseSession);
-    useEffect(() => {
-        handleSupabaseSessionRef.current = handleSupabaseSession;
-    }, [handleSupabaseSession]);
-
-    // Handle Supabase Auth State
-    useEffect(() => {
-        let appUrlListener: any;
-
-        // Handle native deep links for OAuth redirect
-        if (isNative()) {
-            appUrlListener = CapApp.addListener('appUrlOpen', async (data: any) => {
-                try {
-                    const url = new URL(data.url);
-                    // Supabase uses fragments (#) for OAuth tokens
-                    const hash = url.hash.substring(1);
-                    if (hash) {
-                        const params = new URLSearchParams(hash);
-                        const accessToken = params.get('access_token');
-                        const refreshToken = params.get('refresh_token');
-                        
-                        if (accessToken && refreshToken) {
-                            const supabase = getSupabase();
-                            if (supabase) {
-                                const { data: sessionData } = await supabase.auth.setSession({
-                                    access_token: accessToken,
-                                    refresh_token: refreshToken,
-                                });
-                                if (sessionData.session) {
-                                    handleSupabaseSessionRef.current(sessionData.session);
-                                    Browser.close();
-                                }
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error("Deep link handling error:", e);
-                }
-            });
-        }
-
-        const supabase = getSupabase();
-        if (!supabase) {
-            console.warn("Supabase configuration missing. Some features may be disabled.");
-            return () => {
-                if (appUrlListener) appUrlListener.remove();
-            };
-        }
-
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSupabaseSession(session);
-            if (session) handleSupabaseSessionRef.current(session);
-        });
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSupabaseSession(session);
-            if (session) handleSupabaseSessionRef.current(session);
-        });
-
-        return () => {
-            subscription.unsubscribe();
-            if (appUrlListener) appUrlListener.remove();
-        };
-    }, []); // Run only once
-
-    // Trigger auto-login after splash screen if session exists
-    useEffect(() => {
-        if (appState === 'AUTH' && supabaseSession) {
-            handleSupabaseSession(supabaseSession);
-        }
-    }, [appState, supabaseSession, handleSupabaseSession]);
 
     const [selectedAuthMethod, setSelectedAuthMethod] = useState<AuthMethod>(null);
     const [verificationResult, setVerificationResult] = useState<'SUCCESS' | 'FAILURE' | null>(null);
@@ -285,11 +159,6 @@ const AppContent: React.FC = () => {
 
     const handleLogout = useCallback(async (forceLoginScreen: boolean | React.MouseEvent = false, isExpiry = false) => {
         const shouldForce = typeof forceLoginScreen === 'boolean' ? forceLoginScreen : false;
-        
-        const supabase = getSupabase();
-        if (supabase) {
-            await supabase.auth.signOut();
-        }
 
         // If it's an expiry logout for a Google user, trigger re-auth immediately for "easy user" experience
         if (isExpiry && activeUser?.accountType === 'google') {
@@ -402,51 +271,6 @@ const AppContent: React.FC = () => {
             setAppState('GREETING');
         }
     }, [loadUserData]);
-
-    const handleGoogleCodeResponse = useCallback(async (codeResponse: Omit<CodeResponse, 'error' | 'error_description' | 'error_uri'>) => {
-        try {
-            const codeVerifier = sessionStorage.getItem('react-oauth-google-code-verifier');
-            sessionStorage.removeItem('react-oauth-google-code-verifier');
-            const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                    code: codeResponse.code,
-                    client_id: GOOGLE_CLIENT_ID,
-                    grant_type: 'authorization_code',
-                    redirect_uri: window.location.origin,
-                    code_verifier: codeVerifier || "",
-                })
-            });
-            const tokens = await tokenResponse.json();
-            const accessToken = tokens.access_token;
-            const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: { Authorization: `Bearer ${accessToken}` },
-            });
-            const gUser = await userInfoResponse.json();
-            const userId = `google-${gUser.sub}`;
-            setUsers(prevUsers => {
-                const existingUser = prevUsers.find(u => u.id === userId);
-                const userForAuth: User = {
-                    ...(existingUser || {}),
-                    id: userId,
-                    name: existingUser?.name || gUser.name || gUser.email.split('@')[0],
-                    email: gUser.email,
-                    profilePicUrl: existingUser?.profilePicUrl || gUser.picture || `https://i.pravatar.cc/150?u=${gUser.email}`,
-                    accountType: 'google',
-                    accessToken: accessToken,
-                };
-                const updatedUsers = prevUsers.some(u => u.id === userId)
-                    ? prevUsers.map(u => (u.id === userId ? userForAuth : u))
-                    : [...prevUsers, userForAuth];
-                localStorage.setItem('ob-pro-users', JSON.stringify(updatedUsers));
-                handleSelectAccount(userForAuth);
-                return updatedUsers;
-            });
-        } catch (error) {
-            console.error("Google login failed:", error);
-        }
-    }, []);
 
     const handleLoginComplete = useCallback((user: User) => {
         setUsers(prevUsers => {
@@ -569,26 +393,6 @@ const AppContent: React.FC = () => {
 
     const handleGreetingFinish = async () => {
         if (verificationResult === 'SUCCESS') {
-            // Fetch promotion from Supabase
-            const supabase = getSupabase();
-            if (supabase) {
-                try {
-                    const { data, error } = await supabase
-                        .from('promotions')
-                        .select('*')
-                        .eq('isActive', true)
-                        .order('createdAt', { ascending: false })
-                        .limit(1);
-                    
-                    if (data && data.length > 0 && !error) {
-                        setActivePromotion(data[0]);
-                        setShowPromotion(true);
-                    }
-                } catch (err) {
-                    console.error("Failed to fetch promotion:", err);
-                }
-            }
-            
             if (isDataReady && activeUser && initialData) {
                 const isNewProfile = initialData.businessProfile.businessName === 'My Business' && !initialData.businessProfile.phone;
                 if (isNewProfile) {
@@ -832,11 +636,11 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
-    if (!GOOGLE_CLIENT_ID) {
-        console.warn("VITE_GOOGLE_CLIENT_ID is missing. Google Sync will be disabled.");
-        return <AppContent />;
-    }
-    return <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}><AppContent /></GoogleOAuthProvider>;
+    return (
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID || 'google-client'}>
+            <AppContent />
+        </GoogleOAuthProvider>
+    );
 };
 
 export default App;

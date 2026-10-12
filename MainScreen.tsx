@@ -18,7 +18,6 @@ import CalculatorScreen from './screens/CalculatorScreen';
 import BillsScreen from './screens/BillsScreen';
 import { CalendarScreen } from './screens/CalendarScreen';
 import AccountingScreen from './screens/AccountingScreen';
-import { getSupabase } from './src/supabase';
 import InventoryScreen from './screens/InventoryScreen';
 import AddEditProductModal from './components/inventory/AddEditProductModal';
 import AddEditStaffModal from './components/staff/AddEditStaffModal';
@@ -207,64 +206,59 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
     const [preSelectedRoomId, setPreSelectedRoomId] = useState<string | undefined>(undefined);
     const [isEditorActive, setEditorActive] = useState(false); 
 
-    const broadcastChannelRef = useRef<any>(null);
+    const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
 
     useEffect(() => {
-        const supabase = getSupabase();
-        if (!supabase || !activeUser?.id) return;
+        if (!activeUser?.id || typeof BroadcastChannel === 'undefined') return;
 
-        const channel = supabase.channel(`business-${activeUser.id}`);
+        const channel = new BroadcastChannel(`business-${activeUser.id}`);
         
-        channel.on('broadcast', { event: 'order_update' }, (payload) => {
-            const updatedOrder = payload.payload as Order;
-            setAppData(prev => {
-                const existingIndex = prev.orders.findIndex(o => o.id === updatedOrder.id);
-                if (existingIndex >= 0 && JSON.stringify(prev.orders[existingIndex]) === JSON.stringify(updatedOrder)) {
-                    return prev;
-                }
-                let newOrders = [...prev.orders];
-                if (existingIndex >= 0) {
-                    newOrders[existingIndex] = updatedOrder;
-                } else {
-                    newOrders.push(updatedOrder);
-                }
-                return { ...prev, orders: newOrders };
-            });
-        });
-
-        channel.on('broadcast', { event: 'kot_update' }, (payload) => {
-            const updatedKOT = payload.payload as KOT;
-            setAppData(prev => {
-                const existingIndex = prev.kots.findIndex(k => k.id === updatedKOT.id);
-                let newKots = [...prev.kots];
-                if (existingIndex >= 0) {
-                    newKots[existingIndex] = updatedKOT;
-                } else {
-                    newKots.push(updatedKOT);
-                }
-                return { ...prev, kots: newKots };
-            });
-        });
-
-        channel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                broadcastChannelRef.current = channel;
+        channel.onmessage = (event) => {
+            const { type, payload } = event.data || {};
+            if (type === 'order_update') {
+                const updatedOrder = payload as Order;
+                setAppData(prev => {
+                    const existingIndex = prev.orders.findIndex(o => o.id === updatedOrder.id);
+                    if (existingIndex >= 0 && JSON.stringify(prev.orders[existingIndex]) === JSON.stringify(updatedOrder)) {
+                        return prev;
+                    }
+                    let newOrders = [...prev.orders];
+                    if (existingIndex >= 0) {
+                        newOrders[existingIndex] = updatedOrder;
+                    } else {
+                        newOrders.push(updatedOrder);
+                    }
+                    return { ...prev, orders: newOrders };
+                });
+            } else if (type === 'kot_update') {
+                const updatedKOT = payload as KOT;
+                setAppData(prev => {
+                    const existingIndex = prev.kots.findIndex(k => k.id === updatedKOT.id);
+                    let newKots = [...prev.kots];
+                    if (existingIndex >= 0) {
+                        newKots[existingIndex] = updatedKOT;
+                    } else {
+                        newKots.push(updatedKOT);
+                    }
+                    return { ...prev, kots: newKots };
+                });
             }
-        });
+        };
+
+        broadcastChannelRef.current = channel;
 
         return () => {
-            supabase.removeChannel(channel);
+            channel.close();
             broadcastChannelRef.current = null;
         };
     }, [activeUser?.id]);
 
     const broadcastOrderUpdate = useCallback((order: Order) => {
         if (broadcastChannelRef.current) {
-            broadcastChannelRef.current.send({
-                type: 'broadcast',
-                event: 'order_update',
+            broadcastChannelRef.current.postMessage({
+                type: 'order_update',
                 payload: order
-            }).catch(console.error);
+            });
         }
     }, []);
 
@@ -298,21 +292,8 @@ const MainScreen: React.FC<MainScreenProps> = ({ activeUser, initialData, onLogo
 
     useEffect(() => {
         (window as any).navigateToSystemUpdates = () => {
-            // Clear the "new update" badge by updating the last seen timestamp
-            const supabase = getSupabase();
-            if (supabase) {
-                supabase.from('system_notifications')
-                    .select('createdAt')
-                    .order('createdAt', { ascending: false })
-                    .limit(1)
-                    .then(({ data }) => {
-                        if (data && data.length > 0) {
-                            localStorage.setItem('last_seen_system_update', String(new Date(data[0].createdAt).getTime()));
-                            // Dispatch a storage event so other components (like Dashboard) can update
-                            window.dispatchEvent(new Event('storage'));
-                        }
-                    });
-            }
+            localStorage.setItem('last_seen_system_update', String(Date.now()));
+            window.dispatchEvent(new Event('storage'));
             setCurrentView(MainView.SYSTEM_NOTIFICATIONS);
         };
         return () => {

@@ -25,7 +25,6 @@ import ChartIcon from '../icons/ChartIcon';
 import BellIcon from '../icons/BellIcon';
 import WifiIcon from '../icons/WifiIcon';
 import WifiQRModal from '../WifiQRModal';
-import { getSupabase } from '../../src/supabase';
 
 interface DesktopSidebarProps {
     activeUser: User;
@@ -86,28 +85,13 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
     const [isWifiModalOpen, setIsWifiModalOpen] = useState(false);
 
     useEffect(() => {
-        const checkUpdates = async () => {
-            const supabase = getSupabase();
-            if (!supabase) return;
-            try {
-                const { data } = await supabase
-                    .from('system_notifications')
-                    .select('createdAt')
-                    .order('createdAt', { ascending: false })
-                    .limit(1);
-                if (data && data.length > 0) {
-                    const latestUpdate = new Date(data[0].createdAt).getTime();
-                    const lastSeen = Number(localStorage.getItem('last_seen_system_update') || 0);
-                    if (latestUpdate > lastSeen) setHasNewUpdate(true);
-                    else setHasNewUpdate(false);
-                }
-            } catch (err) { console.error(err); }
+        const checkUpdates = () => {
+            const lastSeen = Number(localStorage.getItem('last_seen_system_update') || 0);
+            setHasNewUpdate(false);
         };
         checkUpdates();
         window.addEventListener('storage', checkUpdates);
-        const interval = setInterval(checkUpdates, 300000);
         return () => {
-            clearInterval(interval);
             window.removeEventListener('storage', checkUpdates);
         };
     }, []);
@@ -182,20 +166,9 @@ const DesktopSidebar: React.FC<DesktopSidebarProps> = ({ activeUser, currentView
 
     const handleSetView = (view: MainView) => {
         if (view === MainView.SYSTEM_NOTIFICATIONS) {
-            const supabase = getSupabase();
-            if (supabase) {
-                supabase.from('system_notifications')
-                    .select('createdAt')
-                    .order('createdAt', { ascending: false })
-                    .limit(1)
-                    .then(({ data }) => {
-                        if (data && data.length > 0) {
-                            localStorage.setItem('last_seen_system_update', String(new Date(data[0].createdAt).getTime()));
-                            setHasNewUpdate(false);
-                            window.dispatchEvent(new Event('storage'));
-                        }
-                    });
-            }
+            localStorage.setItem('last_seen_system_update', String(Date.now()));
+            setHasNewUpdate(false);
+            window.dispatchEvent(new Event('storage'));
         }
         setCurrentView(view);
     };

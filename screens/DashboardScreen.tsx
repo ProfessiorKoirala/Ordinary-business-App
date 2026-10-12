@@ -13,7 +13,6 @@ import AuthenticationPromptModal from '../components/AuthenticationPromptModal';
 import WifiIcon from '../components/icons/WifiIcon';
 import WifiQRModal from '../components/WifiQRModal';
 import { motion, AnimatePresence } from 'motion/react';
-import { getSupabase } from '../src/supabase';
 
 interface DashboardScreenProps {
   setCurrentView: (view: MainView) => void;
@@ -82,40 +81,15 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
     const subtitles = ['Empire', 'Terminal', 'Command'];
 
     useEffect(() => {
-        const checkUpdates = async () => {
-            const supabase = getSupabase();
-            if (!supabase) return;
-            
-            try {
-                const { data } = await supabase
-                    .from('system_notifications')
-                    .select('createdAt')
-                    .order('createdAt', { ascending: false })
-                    .limit(1);
-                
-                if (data && data.length > 0) {
-                    const latestUpdate = new Date(data[0].createdAt).getTime();
-                    const lastSeen = Number(localStorage.getItem('last_seen_system_update') || 0);
-                    
-                    if (latestUpdate > lastSeen) {
-                        setHasNewUpdate(true);
-                    } else {
-                        setHasNewUpdate(false);
-                    }
-                }
-            } catch (err) {
-                console.error("Error checking updates:", err);
-            }
+        const checkUpdates = () => {
+            const lastSeen = Number(localStorage.getItem('last_seen_system_update') || 0);
+            setHasNewUpdate(false);
         };
         
         checkUpdates();
-        
-        // Listen for storage events (triggered when navigating from other places)
         window.addEventListener('storage', checkUpdates);
         
-        const interval = setInterval(checkUpdates, 300000); // Check every 5 mins
         return () => {
-            clearInterval(interval);
             window.removeEventListener('storage', checkUpdates);
         };
     }, []);
@@ -379,19 +353,8 @@ const DashboardScreen: React.FC<DashboardScreenProps> = ({
                 <div className="flex items-center gap-2">
                     <button 
                         onClick={() => {
-                            const supabase = getSupabase();
-                            if (supabase) {
-                                supabase.from('system_notifications')
-                                    .select('createdAt')
-                                    .order('createdAt', { ascending: false })
-                                    .limit(1)
-                                    .then(({ data }) => {
-                                        if (data && data.length > 0) {
-                                            localStorage.setItem('last_seen_system_update', String(new Date(data[0].createdAt).getTime()));
-                                            setHasNewUpdate(false);
-                                        }
-                                    });
-                            }
+                            localStorage.setItem('last_seen_system_update', String(Date.now()));
+                            setHasNewUpdate(false);
                             setCurrentView(MainView.SYSTEM_NOTIFICATIONS);
                         }}
                         className={`${hasNewUpdate ? 'flex' : 'hidden'} items-center gap-2 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-all relative`}

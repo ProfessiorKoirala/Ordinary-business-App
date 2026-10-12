@@ -4,9 +4,6 @@ import GoogleIcon from '../components/icons/GoogleIcon';
 import EyeIcon from '../components/icons/EyeIcon';
 import EyeSlashIcon from '../components/icons/EyeSlashIcon';
 import { useGoogleLogin } from '@react-oauth/google';
-import { getSupabase } from '../src/supabase';
-import { isNative } from '../utils/nativeUtils';
-import { Browser } from '@capacitor/browser';
 
 export interface LocalCredentials {
   email: string;
@@ -50,48 +47,43 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalLogin, onLocalSignUp, 
     }
   };
 
-  const handleGoogleLogin = async () => {
-    const supabase = getSupabase();
-    if (!supabase) {
-      setError("Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.");
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      if (isNative()) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-            redirectTo: 'com.obpro.app://google-auth',
-            skipBrowserRedirect: true
-          }
+  const loginWithGoogle = useGoogleLogin({
+    scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+    onSuccess: async (tokenResponse) => {
+      try {
+        setLoading(true);
+        setError('');
+        const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
         });
-        if (error) throw error;
-        if (data?.url) {
-          await Browser.open({ url: data.url });
+        if (!userInfoRes.ok) {
+          throw new Error('Failed to fetch Google profile');
         }
-      } else {
-        const redirectUrl = (import.meta as any).env.VITE_APP_URL || window.location.origin;
-        console.log(`[Supabase Auth] Redirecting to: ${redirectUrl}`);
-        
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            scopes: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
-            redirectTo: redirectUrl
-          }
-        });
-        if (error) throw error;
+        const gUser = await userInfoRes.json();
+        const user: User = {
+          id: `google-${gUser.sub}`,
+          name: gUser.name || gUser.email?.split('@')[0] || 'User',
+          email: gUser.email || '',
+          profilePicUrl: gUser.picture || `https://i.pravatar.cc/150?u=${gUser.email}`,
+          accountType: 'google',
+          accessToken: tokenResponse.access_token,
+        };
+        onLoginComplete(user);
+      } catch (err: any) {
+        console.error("Google userinfo error:", err);
+        setError("Failed to fetch Google profile. Please try again.");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error("Google login error:", err);
-      setError("Failed to start Google login. Please check your Supabase configuration.");
-      setLoading(false);
+    },
+    onError: (err) => {
+      console.error("Google login failed:", err);
+      if (!(import.meta as any).env.VITE_GOOGLE_CLIENT_ID || (import.meta as any).env.VITE_GOOGLE_CLIENT_ID.includes('placeholder')) {
+        alert("Google Cloud OAuth Client ID is required for Google Sign-In. Please set VITE_GOOGLE_CLIENT_ID in your environment variables with a valid Google OAuth Client ID.");
+      }
+      setError("Google Sign-In was cancelled or failed due to invalid client configuration.");
     }
-  };
+  });
 
   return (
     <div className="h-[100dvh] flex flex-col bg-white dark:bg-gray-900 transition-colors relative overflow-hidden">
@@ -188,7 +180,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalLogin, onLocalSignUp, 
             <div className="flex items-center justify-center">
                 <button
                     type="button"
-                    onClick={handleGoogleLogin}
+                    onClick={() => loginWithGoogle()}
                     disabled={loading}
                     className="w-full flex items-center justify-center gap-3 py-4 px-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/60 active:scale-[0.98] transition-all shadow-sm group disabled:opacity-50"
                     aria-label="Sign in with Google"

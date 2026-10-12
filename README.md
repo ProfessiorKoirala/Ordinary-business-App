@@ -15,11 +15,17 @@ View your app in AI Studio: https://ai.studio/apps/3f0ba7d8-7c03-4118-b4e6-b96e5
 1. Install dependencies:
    `npm install`
 2. Set environment variables in `.env` (refer to `.env.example`):
-   - `GEMINI_API_KEY` (optional, for AI features)
-   - `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (for cloud sync)
-   - `VITE_GOOGLE_CLIENT_ID` (for Google sign-in)
+   - `VITE_GOOGLE_CLIENT_ID` (Google OAuth Client ID with Drive access)
+   - `GEMINI_API_KEY` (optional, for Leo AI Assistant)
 3. Run the app:
    `npm run dev`
+
+---
+
+## Architecture & Storage
+- **Google Drive Storage**: All user data (orders, inventory, expenses, staff, etc.) is saved directly to and loaded from `obProData.xlsx` in the authenticated user's personal Google Drive.
+- **Local Fallback**: Full offline functionality via local browser storage.
+- **Zero Third-Party Databases**: No Supabase, no Firebase, and no backend database. The server purely serves the static app assets and health checks.
 
 ---
 

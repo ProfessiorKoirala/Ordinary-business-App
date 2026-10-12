@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { SystemNotification } from '../types';
-import { getSupabase } from '../src/supabase';
 import BackIcon from '../components/icons/BackIcon';
 import BellIcon from '../components/icons/BellIcon';
 import CloseIcon from '../components/icons/CloseIcon';
@@ -10,29 +9,34 @@ interface SystemNotificationsScreenProps {
     onBack: () => void;
 }
 
+const DEFAULT_NOTIFICATIONS: SystemNotification[] = [
+    {
+        id: '1',
+        title: 'Google Drive Direct Sync Active',
+        message: 'Your business terminal now connects directly to your Google Drive for automatic data backups in Excel format without any intermediary databases.',
+        type: 'Update',
+        createdAt: new Date().toISOString()
+    },
+    {
+        id: '2',
+        title: 'Offline-First Resilience',
+        message: 'Your terminal works seamlessly offline. Transactions, orders, inventory, and ledger entries sync automatically whenever an internet connection is available.',
+        type: 'Update',
+        createdAt: new Date(Date.now() - 86400000).toISOString()
+    }
+];
+
 const SystemNotificationsScreen: React.FC<SystemNotificationsScreenProps> = ({ onBack }) => {
-    const [notifications, setNotifications] = useState<SystemNotification[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [notifications, setNotifications] = useState<SystemNotification[]>(DEFAULT_NOTIFICATIONS);
+    const [loading, setLoading] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState<SystemNotification | null>(null);
 
     const fetchNotifications = async () => {
         setLoading(true);
-        const supabase = getSupabase();
-        if (supabase) {
-            try {
-                const { data, error } = await supabase
-                    .from('system_notifications')
-                    .select('*')
-                    .order('createdAt', { ascending: false });
-                
-                if (data && !error) {
-                    setNotifications(data);
-                }
-            } catch (err) {
-                console.error("Failed to fetch system notifications:", err);
-            }
-        }
-        setLoading(false);
+        setTimeout(() => {
+            setNotifications(DEFAULT_NOTIFICATIONS);
+            setLoading(false);
+        }, 200);
     };
 
     useEffect(() => {
