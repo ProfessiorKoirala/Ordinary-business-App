@@ -3,7 +3,7 @@ import { exportToExcelBuffer, importFromExcel } from "./utils/excelExportUtils";
 import { log } from './utils/logger';
 
 // Default Google OAuth Client ID for OB Pro
-export const GOOGLE_CLIENT_ID = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '3255940559-7b3hjj6b2q8r59q0bshb4j6b59q0bshb.apps.googleusercontent.com';
+export const GOOGLE_CLIENT_ID = (import.meta as any).env.VITE_GOOGLE_CLIENT_ID || '486648989611-lmkrpq62dr32qqsol7au8be2mae8uopp.apps.googleusercontent.com';
 
 // --- SCOPES ---
 // drive.file: Per-file access to files created or opened by the app. The user can see these files in their Drive.
